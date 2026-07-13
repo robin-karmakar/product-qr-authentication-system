@@ -26,17 +26,17 @@ class UserManagementController extends Controller
      * sees only accounts they personally created (Distributors and
      * Retailers), keeping the single-organization model's scoping
      * simple without needing a separate multi-tenant guard.
+     *
+     * Query logic lives entirely in AuthService/UserRepository —
+     * this method never touches Eloquent directly, per the project's
+     * repository/service architecture.
      */
     public function index(Request $request): View
     {
         $actingUser = $request->user();
 
-        $users = $actingUser->hasRole('super_admin')
-            ? User::with('roles')->latest()->get()
-            : User::with('roles')->where('created_by', $actingUser->id)->latest()->get();
-
         return view('admin.users.index', [
-            'users' => $users,
+            'users' => $this->authService->listStaffFor($actingUser),
             'assignableRoles' => $this->authService->assignableRolesFor($actingUser),
         ]);
     }

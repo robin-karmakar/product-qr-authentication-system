@@ -9,6 +9,7 @@ use App\Exceptions\ApiException;
 use App\Models\User;
 use App\Notifications\StaffAccountCreatedNotification;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -112,6 +113,22 @@ class AuthService extends BaseService
     public function activate(User $user): User
     {
         return $this->userRepository->update($user, ['is_active' => true]);
+    }
+
+    /**
+     * Staff listing scoped to the acting admin: Super Admin sees
+     * everyone, Company Admin sees only accounts they personally
+     * created. Lives here (not in the controller) so the controller
+     * never touches Eloquent directly, keeping the repository/service
+     * layers as the single source of query logic.
+     *
+     * @return Collection<int, User>
+     */
+    public function listStaffFor(User $actingAdmin): Collection
+    {
+        return $actingAdmin->hasRole(RoleEnum::SUPER_ADMIN->value)
+            ? $this->userRepository->allWithRoles()
+            : $this->userRepository->createdBy($actingAdmin->id);
     }
 
     /**

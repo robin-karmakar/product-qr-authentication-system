@@ -6,6 +6,7 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
@@ -16,19 +17,21 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
     public function findByEmail(string $email): ?User
     {
-        return $this->query()->where('email', $email)->first();
+        // withTrashed() is required here: without it, a soft-deleted
+        // user's email simply returns null (as if the account never
+        // existed), which means AuthService::login()'s trashed()
+        // check could never actually be reached.
+        return $this->query()->withTrashed()->where('email', $email)->first();
     }
 
-    /**
-     * Users created by a given admin, scoped by role — used by
-     * Company Admin dashboards to list only the Distributors/
-     * Retailers they personally onboarded.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<int, User>
-     */
-    public function createdBy(int $adminId, ?string $role = null)
+    public function allWithRoles(): Collection
     {
-        $query = $this->query()->where('created_by', $adminId);
+        return $this->query()->with('roles')->latest()->get();
+    }
+
+    public function createdBy(int $adminId, ?string $role = null): Collection
+    {
+        $query = $this->query()->with('roles')->where('created_by', $adminId);
 
         if ($role) {
             $query->whereHas('roles', fn ($q) => $q->where('name', $role));
