@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\ApiException;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -25,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'active' => EnsureUserIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -37,6 +40,15 @@ return Application::configure(basePath: dirname(__DIR__))
                     'errors' => $e->getErrors(),
                 ], $e->getStatus());
             }
+
+            // Standard Laravel behavior for a non-JSON request: redirect
+            // back with the message stored as a session validation error
+            // (matches how ValidationException behaves by default), so
+            // Blade forms and Pest's assertSessionHasErrors() work
+            // exactly as they would for any other form failure.
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->withErrors(['email' => $e->getMessage()]);
         });
 
         $exceptions->render(function (ValidationException $e, $request) {

@@ -1,22 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Repositories\Eloquent\UserRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * @var array<class-string, class-string>
      */
+    public array $bindings = [
+        UserRepositoryInterface::class => UserRepository::class,
+    ];
+
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         //
