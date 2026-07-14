@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -54,6 +55,19 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::middleware('role:distributor|retailer')->group(function (): void {
         Route::view('/custody/dashboard', 'custody.placeholder')->name('custody.dashboard');
     });
+
+    // Product catalog administration — Super Admin and Company Admin
+    // only, gated by the 'manage-products' permission (also enforced
+    // again at the policy layer inside each controller action).
+    Route::middleware(['role:super_admin|company_admin', 'permission:manage-products'])
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function (): void {
+            Route::get('categories', [ProductCategoryController::class, 'index'])->name('categories.index');
+            Route::post('categories', [ProductCategoryController::class, 'store'])->name('categories.store');
+            Route::put('categories/{category}', [ProductCategoryController::class, 'update'])->name('categories.update');
+            Route::delete('categories/{category}', [ProductCategoryController::class, 'destroy'])->name('categories.destroy');
+        });
 
     // Staff account management — Super Admin manages everyone,
     // Company Admin manages only their own Distributors/Retailers.
