@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductCategory extends Model
@@ -54,13 +55,16 @@ class ProductCategory extends Model
         return $query->where('is_active', true);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Module 3.2 integration point
-    |--------------------------------------------------------------------------
-    | Once Product exists, a `products(): HasMany` relationship and a
-    | corresponding `hasProducts()` deletion guard will be added here.
-    | Deliberately absent in 3.1 since the `products` table does not
-    | exist yet.
-    */
+    /**
+     * Added in Module 3.2.1 now that Product exists. Used both for
+     * eager-loading a category's products where needed, and as the
+     * relationship backing ProductCategoryService's deletion guard
+     * (via ProductRepository::existsForCategory(), not this relation
+     * directly, to keep the guard in the repository/service layer
+     * rather than querying through the model in the service).
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
 }
