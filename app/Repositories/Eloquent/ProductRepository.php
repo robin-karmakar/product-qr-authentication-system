@@ -18,4 +18,13 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     {
         return $this->query()->where('product_category_id', $categoryId)->exists();
     }
+
+    public function slugExists(string $slug, ?int $ignoreId = null): bool
+    {
+        return $this->query()
+            ->withTrashed()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists();
+    }
 }
